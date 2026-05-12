@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DMRX Farmer Calculator</title>
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DMRX Farm">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --gold: #f5c518;
+    --gold-light: #ffd700;
+    --gold-dark: #c9a800;
+    --gold-glow: rgba(245,197,24,0.35);
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(245,197,24,0.18);
+    --glass-blur: blur(18px);
+    --green-wa: #25d366;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  }
+  .bg-grid::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(245,197,24,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,197,24,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  .bg-grid::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245,197,24,0.12) 0%, transparent 70%);
+  }
+  @keyframes gridPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+  .orb {
+    position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0;
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .orb-1 { width:300px; height:300px; background:rgba(245,197,24,0.07); top:-80px; right:-60px; }
+  .orb-2 { width:200px; height:200px; background:rgba(245,197,24,0.05); bottom:20%; left:-60px; animation-delay:-6s; }
+  @keyframes orbFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.08)} }
+
+  .app-wrapper { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 100px; }
+
+  /* Glass card */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 20px;
+  }
+  .glass-dark {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 20px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, rgba(245,197,24,0.08) 0%, rgba(0,0,0,0.7) 100%);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    padding: 20px 20px 18px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .corn-icon {
+    font-size: 2.4rem;
+    filter: drop-shadow(0 0 12px rgba(245,197,24,0.8));
+    animation: cornBounce 3s ease-in-out infinite;
+  }
+  @keyframes cornBounce { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-6px) rotate(5deg)} }
+
+  .title-dmrx {
+    background: linear-gradient(90deg, #ffd700, #f5c518, #fff8a0, #f5c518);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+    font-size: 1.7rem; font-weight: 900; letter-spacing: 4px;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
+  .reset-btn {
+    background: rgba(245,197,24,0.1);
+    border: 1px solid rgba(245,197,24,0.3);
+    color: var(--gold);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .reset-btn:hover, .reset-btn:active {
+    background: rgba(245,197,24,0.22);
+    box-shadow: 0 0 16px rgba(245,197,24,0.25);
+    transform: scale(0.97);
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 3px;
+    color: var(--gold); text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .section-label::before, .section-label::after {
+    content:''; flex:1; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(245,197,24,0.4), transparent);
+  }
+
+  /* Input fields */
+  .input-group { position: relative; margin-bottom: 14px; }
+  .input-label {
+    font-size: 0.7rem; font-weight: 600; color: rgba(245,197,24,0.7);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 6px; display: block;
+  }
+  .calc-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(245,197,24,0.2);
+    border-radius: 14px;
+    padding: 13px 16px 13px 44px;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem; font-weight: 500;
+    outline: none; transition: all 0.3s;
+    caret-color: var(--gold);
+  }
+  .calc-input::placeholder { color: rgba(255,255,255,0.2); font-size: 0.85rem; }
+  .calc-input:focus {
+    border-color: rgba(245,197,24,0.6);
+    background: rgba(245,197,24,0.06);
+    box-shadow: 0 0 0 3px rgba(245,197,24,0.1), 0 0 20px rgba(245,197,24,0.08);
+  }
+  .input-icon {
+    position: absolute; left: 14px; bottom: 14px;
+    color: rgba(245,197,24,0.5); font-size: 0.9rem;
+    pointer-events: none; transition: color 0.3s;
+  }
+  .input-group:focus-within .input-icon { color: var(--gold); }
+
+  /* Cut inputs row */
+  .cuts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* Result rows */
+  .result-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+  .result-row:hover { border-color: rgba(245,197,24,0.2); background: rgba(245,197,24,0.04); }
+  .result-label { font-size: 0.75rem; color: rgba(255,255,255,0.55); font-weight: 500; }
+  .result-value { font-size: 0.92rem; font-weight: 700; color: #fff; }
+  .result-value.cut { color: #ff6b6b; }
+  .result-value.after { color: #4ecdc4; }
+
+  /* Final card */
+  .final-card {
+    background: linear-gradient(135deg, rgba(245,197,24,0.12) 0%, rgba(245,197,24,0.04) 100%);
+    border: 1px solid rgba(245,197,24,0.4);
+    border-radius: 20px;
+    padding: 22px 20px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .final-card::before {
+    content:'';position:absolute;inset:0;
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(245,197,24,0.15), transparent);
+  }
+  .final-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 3px; color: rgba(245,197,24,0.7); text-transform: uppercase; margin-bottom: 8px; }
+  .final-maan { font-size: 2rem; font-weight: 900; color: var(--gold); line-height: 1; }
+  .final-kg-tag { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .final-quintal { font-size: 1.1rem; font-weight: 700; color: #4ecdc4; margin-top: 12px; }
+  .divider-line { height: 1px; background: rgba(245,197,24,0.2); margin: 12px 0; }
+
+  /* Action buttons */
+  .action-btn {
+    width: 100%; padding: 15px;
+    border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.3s; letter-spacing: 0.5px;
+  }
+  .wa-btn {
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.3);
+  }
+  .wa-btn:hover, .wa-btn:active { transform: scale(0.98); box-shadow: 0 6px 30px rgba(37,211,102,0.45); }
+  .copy-btn {
+    background: linear-gradient(135deg, #1e6dff, #0047cc);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(30,109,255,0.3);
+  }
+  .copy-btn:hover, .copy-btn:active { transform: scale(0.98); box-shadow: 0 6px 30px rgba(30,109,255,0.45); }
+
+  /* Popup / Bottom sheet */
+  .popup-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.35s;
+  }
+  .popup-overlay.open { opacity: 1; pointer-events: all; }
+  .popup-sheet {
+    width: 100%; max-width: 480px;
+    background: #0d0d0d;
+    border: 1px solid rgba(245,197,24,0.25);
+    border-bottom: none;
+    border-radius: 28px 28px 0 0;
+    padding: 28px 22px 36px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .popup-overlay.open .popup-sheet { transform: translateY(0); }
+  .popup-handle {
+    width: 44px; height: 4px; border-radius: 3px;
+    background: rgba(245,197,24,0.3);
+    margin: 0 auto 22px;
+  }
+  .popup-title { font-size: 1rem; font-weight: 700; color: var(--gold); margin-bottom: 18px; text-align: center; }
+  .popup-input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(245,197,24,0.25);
+    border-radius: 14px;
+    padding: 13px 16px;
+    color: #fff; font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem; outline: none; margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+  .popup-input::placeholder { color: rgba(255,255,255,0.25); }
+  .popup-input:focus { border-color: rgba(245,197,24,0.6); }
+  .popup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .popup-cancel {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.6);
+    border-radius: 14px; padding: 13px;
+    font-family: 'Poppins', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .popup-cancel:hover { background: rgba(255,255,255,0.1); }
+  .popup-confirm {
+    border: none; border-radius: 14px; padding: 13px;
+    font-family: 'Poppins', sans-serif; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: all 0.3s; color: #fff;
+  }
+  .popup-confirm.wa { background: linear-gradient(135deg,#25d366,#128c7e); }
+  .popup-confirm.copy-c { background: linear-gradient(135deg,#1e6dff,#0047cc); }
+  .popup-confirm:hover { transform: scale(0.97); filter: brightness(1.1); }
+
+  /* History section */
+  .history-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(245,197,24,0.1);
+    border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 10px; transition: all 0.3s; cursor: pointer;
+  }
+  .history-item:hover { border-color: rgba(245,197,24,0.25); background: rgba(245,197,24,0.04); }
+  .history-item.expanded { border-color: rgba(245,197,24,0.4); background: rgba(245,197,24,0.06); }
+  .history-expand-detail {
+    display: none; margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(245,197,24,0.15);
+  }
+  .history-item.expanded .history-expand-detail { display: block; }
+  .history-expand-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+  }
+  .history-expand-row:last-child { margin-bottom: 0; }
+  .history-expand-label { color: rgba(255,255,255,0.45); font-weight: 500; }
+  .history-expand-val { font-weight: 700; color: #fff; }
+  .history-expand-val.cut { color: #ff6b6b; }
+  .history-expand-val.after { color: #4ecdc4; }
+  .history-expand-val.gold { color: var(--gold); }
+  .history-chevron {
+    transition: transform 0.3s; color: rgba(245,197,24,0.5); font-size: 0.7rem;
+  }
+  .history-item.expanded .history-chevron { transform: rotate(180deg); }
+  .history-del-btn {
+    background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.2);
+    color: #ff6b6b; border-radius: 8px; padding: 5px 10px;
+    font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: all 0.2s;
+    display: flex; align-items: center; gap: 4px; margin-top: 10px; width: 100%;
+    justify-content: center;
+  }
+  .history-del-btn:active { background: rgba(255,80,80,0.25); transform: scale(0.97); }
+  .history-name { font-size: 0.9rem; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+  .history-meta { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+  .history-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .history-stat { text-align: center; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 6px 4px; }
+  .history-stat-label { font-size: 0.6rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+  .history-stat-value { font-size: 0.8rem; font-weight: 700; color: #fff; }
+
+  .clear-history-btn {
+    background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.25);
+    color: #ff6b6b; border-radius: 12px; padding: 9px 16px;
+    font-family: 'Poppins', sans-serif; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .clear-history-btn:hover { background: rgba(255,80,80,0.2); }
+
+  .empty-history {
+    text-align: center; padding: 30px 0;
+    color: rgba(255,255,255,0.2); font-size: 0.85rem;
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: rgba(245,197,24,0.15); border: 1px solid rgba(245,197,24,0.4);
+    backdrop-filter: blur(20px); border-radius: 50px;
+    padding: 10px 24px; font-size: 0.82rem; font-weight: 600;
+    color: var(--gold); z-index: 999; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Pulse animation for result values */
+  @keyframes valuePop { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+  .value-pop { animation: valuePop 0.3s ease; }
+
+  /* Number badge */
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(245,197,24,0.15); border: 1px solid rgba(245,197,24,0.3);
+    border-radius: 8px; padding: 2px 8px;
+    font-size: 0.65rem; font-weight: 700; color: var(--gold); letter-spacing: 1px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.25); border-radius: 4px; }
+
+  /* Select mode */
+  .hist-checkbox { width:20px; flex-shrink:0; }
+  .history-item.selected {
+    border-color: rgba(245,197,24,0.6) !important;
+    background: rgba(245,197,24,0.1) !important;
+  }
+  .select-mode-item { transition: all 0.2s; }
+
+  /* Section spacing */
+  .section { padding: 0 16px; margin-bottom: 14px; }
+
+  /* Input number arrows hide */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- App -->
+<div class="app-wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="corn-icon">🌽</span>
+        <div>
+          <div class="title-dmrx">DMRX</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);font-weight:500;letter-spacing:2px;margin-top:-2px;">FARMER CALCULATOR</div>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">
+        <i class="fas fa-rotate-left"></i> Reset
+      </button>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+
+  <!-- INPUT SECTION -->
+  <div class="section">
+    <div class="glass" style="padding:18px 16px;">
+      <div class="section-label">Total Quantity</div>
+      <div class="cuts-row">
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">Maan</label>
+          <i class="fas fa-seedling input-icon" style="font-size:0.8rem;left:12px;bottom:15px;"></i>
+          <input type="number" id="inp_maan" class="calc-input" placeholder="e.g. 40" oninput="onInput('maan')" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">KG</label>
+          <i class="fas fa-weight-hanging input-icon" style="font-size:0.8rem;left:12px;bottom:15px;"></i>
+          <input type="number" id="inp_kg" class="calc-input" placeholder="KG" oninput="onInput('kg')" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">Quintal</label>
+          <i class="fas fa-cube input-icon" style="font-size:0.8rem;left:12px;bottom:15px;"></i>
+          <input type="number" id="inp_quintal" class="calc-input" placeholder="Qtl" oninput="onInput('quintal')" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUTS SECTION -->
+  <div class="section">
+    <div class="glass" style="padding:18px 16px;">
+      <div class="section-label">Cut Settings</div>
+      <div class="cuts-row">
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">Worker</label>
+          <i class="fas fa-person-digging input-icon" style="font-size:0.8rem;left:12px;bottom:15px;"></i>
+          <input type="number" id="inp_worker" class="calc-input" placeholder="" oninput="calculate()" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">Baluri KG</label>
+          <span style="position:absolute;left:12px;bottom:11px;font-size:1rem;pointer-events:none;">🌽</span>
+          <input type="number" id="inp_baluri" class="calc-input" placeholder="KG" oninput="calculate()" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label class="input-label">Tractor KG</label>
+          <i class="fas fa-tractor input-icon" style="font-size:0.8rem;left:12px;bottom:15px;"></i>
+          <input type="number" id="inp_tractor" class="calc-input" placeholder="KG" oninput="calculate()" step="any" min="0" style="padding-left:36px;font-size:0.9rem;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SECTION -->
+  <div class="section" id="results-section" style="display:none;">
+    <div class="glass" style="padding:18px 16px;">
+      <div class="section-label">Calculation Results</div>
+
+      <div class="result-row">
+        <span class="result-label"><i class="fas fa-person-digging" style="margin-right:6px;color:rgba(245,197,24,0.5);"></i>Worker Cut</span>
+        <span class="result-value cut" id="res_worker_cut">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label"><i class="fas fa-arrow-right" style="margin-right:6px;color:rgba(78,205,196,0.5);"></i>After Worker</span>
+        <span class="result-value after" id="res_after_worker">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label"><span style="margin-right:6px;">🌽</span>Baluri Cut</span>
+        <span class="result-value cut" id="res_baluri_cut">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label"><i class="fas fa-arrow-right" style="margin-right:6px;color:rgba(78,205,196,0.5);"></i>After Baluri</span>
+        <span class="result-value after" id="res_after_baluri">—</span>
+      </div>
+      <div class="result-row" style="margin-bottom:0">
+        <span class="result-label"><i class="fas fa-tractor" style="margin-right:6px;color:rgba(245,197,24,0.5);"></i>Tractor Cut</span>
+        <span class="result-value cut" id="res_tractor_cut">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL RESULT CARD -->
+  <div class="section" id="final-section" style="display:none;">
+    <div class="final-card">
+      <div class="final-label">✦ Final Result ✦</div>
+      <div class="final-maan" id="final_maan_display">0 Maan</div>
+      <div class="final-kg-tag" id="final_kg_display"></div>
+      <div class="divider-line"></div>
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Quintal</div>
+      <div class="final-quintal" id="final_quintal_display">0.00 Quintal</div>
+    </div>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div class="section" id="action-section" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button class="action-btn wa-btn" onclick="openPopup('wa')">
+        <i class="fab fa-whatsapp" style="font-size:1.2rem;"></i>
+        WhatsApp
+      </button>
+      <button class="action-btn copy-btn" onclick="openPopup('copy')">
+        <i class="fas fa-copy" style="font-size:1rem;"></i>
+        Copy Bill
+      </button>
+    </div>
+  </div>
+
+  <!-- HISTORY SECTION -->
+  <div class="section">
+    <div class="glass" style="padding:18px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleHistorySection()">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-clock-rotate-left" style="color:var(--gold);font-size:0.85rem;"></i>
+          <span style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:1.5px;text-transform:uppercase;">History</span>
+          <span class="badge" id="history-count">0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="clear-history-btn" onclick="event.stopPropagation();clearHistory()" id="delete-all-btn" style="display:none;">
+            <i class="fas fa-trash-can"></i> Delete All
+          </button>
+          <i class="fas fa-chevron-down" id="history-chevron-main" style="color:rgba(245,197,24,0.5);font-size:0.8rem;transition:transform 0.3s;"></i>
+        </div>
+      </div>
+      <div id="history-body" style="display:none;margin-top:16px;">
+        <div id="history-list">
+          <div class="empty-history">
+            <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3;"></i>
+            No calculations saved yet
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:16px;"></div>
+  <div style="text-align:center;font-size:0.65rem;color:rgba(255,255,255,0.15);padding-bottom:10px;letter-spacing:2px;">
+    DMRX FARMER CALCULATOR • v2.0
+  </div>
+
+</div><!-- end app-wrapper -->
+
+<!-- POPUP OVERLAY -->
+<div class="popup-overlay" id="popup-overlay" onclick="closePopupOutside(event)">
+  <div class="popup-sheet" id="popup-sheet">
+    <div class="popup-handle"></div>
+    <div class="popup-title" id="popup-title">Share Bill</div>
+
+    <!-- WA flow: name input + cancel + send -->
+    <div id="popup-name-section">
+      <input type="text" id="popup-name" class="popup-input" placeholder="Customer name (optional)" autocomplete="off" />
+      <div class="popup-actions">
+        <button class="popup-cancel" onclick="closePopup()">
+          <i class="fas fa-xmark" style="margin-right:6px;"></i>Cancel
+        </button>
+        <button class="popup-confirm" id="popup-confirm-btn" onclick="confirmPopup()">
+          <i class="fas fa-paper-plane" style="margin-right:6px;"></i>Send
+        </button>
+      </div>
+    </div>
+
+    <!-- Copy flow: name input + 3 buttons -->
+    <div id="popup-copy-section" style="display:none;">
+      <input type="text" id="popup-name-copy" class="popup-input" placeholder="Customer name (optional)" autocomplete="off" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <button onclick="doSaveOnly()" style="background:linear-gradient(135deg,rgba(245,197,24,0.2),rgba(245,197,24,0.08));border:1px solid rgba(245,197,24,0.4);color:var(--gold);border-radius:14px;padding:16px 8px;font-family:Poppins,sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i class="fas fa-bookmark" style="font-size:1rem;"></i> Save
+        </button>
+        <button onclick="doCopyAndSave()" style="background:linear-gradient(135deg,#1e6dff,#0047cc);border:none;color:#fff;border-radius:14px;padding:16px 8px;font-family:Poppins,sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i class="fas fa-copy" style="font-size:1rem;"></i> Copy
+        </button>
+      </div>
+      <button onclick="closePopup()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);border-radius:12px;padding:11px;font-family:Poppins,sans-serif;font-size:0.8rem;cursor:pointer;">
+        <i class="fas fa-xmark" style="margin-right:6px;"></i>Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────
+const MAAN_TO_KG = 40;
+let lastChanged = 'maan';
+let currentPopupType = 'wa';
+let customerCounter = parseInt(localStorage.getItem('dmrx_counter') || '0');
+let calcResult = null; // stores last valid calculation
+
+// ─── INPUT HANDLERS ──────────────────────────────────────────────
+function onInput(field) {
+  lastChanged = field;
+  const v = parseFloat(document.getElementById('inp_' + field).value) || 0;
+
+  if (field === 'maan') {
+    const kg = v * MAAN_TO_KG;
+    const quintal = kg / 100;
+    setOther('kg', kg);
+    setOther('quintal', fmtNum(quintal));
+  } else if (field === 'kg') {
+    const maan = v / MAAN_TO_KG;
+    const quintal = v / 100;
+    setOther('maan', fmtNum(maan));
+    setOther('quintal', fmtNum(quintal));
+  } else if (field === 'quintal') {
+    const kg = v * 100;
+    const maan = kg / MAAN_TO_KG;
+    setOther('kg', kg);
+    setOther('maan', fmtNum(maan));
+  }
+  calculate();
+}
+
+function setOther(field, value) {
+  const el = document.getElementById('inp_' + field);
+  if (document.activeElement !== el) {
+    el.value = (value === 0 || value === '0') ? '' : value;
+  }
+}
+
+// ─── CORE CALCULATION ────────────────────────────────────────────
+function calculate() {
+  const maanVal = parseFloat(document.getElementById('inp_maan').value);
+  const workerVal = parseFloat(document.getElementById('inp_worker').value);
+  const baluriVal = parseFloat(document.getElementById('inp_baluri').value);
+  const tractorVal = parseFloat(document.getElementById('inp_tractor').value);
+
+  if (isNaN(maanVal) || maanVal <= 0) {
+    hideResults(); calcResult = null; return;
+  }
+
+  const totalMaan = maanVal;
+
+  // Worker cut
+  let workerCut = 0;
+  if (!isNaN(workerVal) && workerVal > 0) {
+    workerCut = totalMaan / workerVal;
+  }
+  const afterWorker = totalMaan - workerCut;
+
+  // Baluri cut
+  let baluriCut = 0;
+  if (!isNaN(baluriVal) && baluriVal > 0) {
+    baluriCut = afterWorker * baluriVal / 40;
+  }
+  const afterBaluri = afterWorker - baluriCut;
+
+  // Tractor cut
+  let tractorCut = 0;
+  if (!isNaN(tractorVal) && tractorVal > 0) {
+    tractorCut = afterBaluri * tractorVal / 40;
+  }
+  const finalMaan = afterBaluri - tractorCut;
+  const finalQuintal = finalMaan * 40 / 100;
+
+  // Decompose decimal maan → whole maan + KG
+  const wholeMaan = Math.floor(finalMaan);
+  const remainKg = Math.round((finalMaan - wholeMaan) * MAAN_TO_KG * 100) / 100;
+
+  calcResult = {
+    totalMaan, workerCut, afterWorker,
+    baluriCut, afterBaluri, tractorCut,
+    finalMaan, finalQuintal, wholeMaan, remainKg,
+    workerInput: isNaN(workerVal) ? 0 : workerVal,
+    baluriInput: isNaN(baluriVal) ? 0 : baluriVal,
+    tractorInput: isNaN(tractorVal) ? 0 : tractorVal,
+    kgInput: parseFloat(document.getElementById('inp_kg').value) || 0,
+    quintalInput: parseFloat(document.getElementById('inp_quintal').value) || 0,
+  };
+
+  showResults(calcResult);
+}
+
+function showResults(r) {
+  // update result rows
+  setResVal('res_worker_cut', formatMaanFull(r.workerCut));
+  setResVal('res_after_worker', formatMaanFull(r.afterWorker));
+  setResVal('res_baluri_cut', formatMaanFull(r.baluriCut));
+  setResVal('res_after_baluri', formatMaanFull(r.afterBaluri));
+  setResVal('res_tractor_cut', formatMaanFull(r.tractorCut));
+
+  // Final display
+  const maanLabel = r.wholeMaan > 0 || r.remainKg === 0
+    ? r.wholeMaan + ' Maan'
+    : '';
+  const kgLabel = r.remainKg > 0 ? r.remainKg + ' KG' : '';
+
+  document.getElementById('final_maan_display').textContent =
+    r.wholeMaan > 0 && r.remainKg > 0
+      ? r.wholeMaan + ' Maan ' + r.remainKg + ' KG'
+      : r.wholeMaan > 0
+        ? r.wholeMaan + ' Maan'
+        : r.remainKg + ' KG';
+
+  document.getElementById('final_kg_display').textContent =
+    fmtNum(r.finalMaan * MAAN_TO_KG) + ' KG Total';
+
+  document.getElementById('final_quintal_display').textContent =
+    fmtNum(r.finalQuintal) + ' Quintal';
+
+  document.getElementById('results-section').style.display = '';
+  document.getElementById('final-section').style.display = '';
+  document.getElementById('action-section').style.display = '';
+}
+
+function hideResults() {
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('final-section').style.display = 'none';
+  document.getElementById('action-section').style.display = 'none';
+}
+
+function setResVal(id, val) {
+  const el = document.getElementById(id);
+  if (el.textContent !== val) {
+    el.textContent = val;
+    el.classList.remove('value-pop');
+    void el.offsetWidth;
+    el.classList.add('value-pop');
+  }
+}
+
+// ─── FORMAT HELPERS ───────────────────────────────────────────────
+function fmtNum(n) {
+  if (isNaN(n) || n === null) return '0';
+  return parseFloat(n.toFixed(4)).toString();
+}
+
+function formatMaanFull(maan) {
+  if (isNaN(maan) || maan <= 0) return '0 Maan';
+  const whole = Math.floor(maan);
+  const kg = Math.round((maan - whole) * MAAN_TO_KG * 100) / 100;
+  if (whole > 0 && kg > 0) return whole + ' Maan ' + kg + ' KG';
+  if (whole > 0) return whole + ' Maan';
+  return kg + ' KG';
+}
+
+// ─── RESET ────────────────────────────────────────────────────────
+function resetAll() {
+  ['maan','kg','quintal','worker','baluri','tractor'].forEach(f => {
+    const el = document.getElementById('inp_' + f);
+    if (el) el.value = '';
+  });
+  calcResult = null;
+  hideResults();
+  showToast('All inputs cleared ✓');
+}
+
+// ─── POPUP ────────────────────────────────────────────────────────
+function openPopup(type) {
+  if (!calcResult) { showToast('No calculation to share'); return; }
+  currentPopupType = type;
+  const overlay = document.getElementById('popup-overlay');
+  const title = document.getElementById('popup-title');
+  const nameSection = document.getElementById('popup-name-section');
+  const copySection = document.getElementById('popup-copy-section');
+
+  if (type === 'wa') {
+    title.innerHTML = '<i class="fab fa-whatsapp" style="margin-right:8px;color:#25d366;"></i>Share on WhatsApp';
+    const confirmBtn = document.getElementById('popup-confirm-btn');
+    confirmBtn.className = 'popup-confirm wa';
+    confirmBtn.innerHTML = '<i class="fab fa-whatsapp" style="margin-right:6px;"></i>Send';
+    nameSection.style.display = '';
+    copySection.style.display = 'none';
+  } else {
+    title.innerHTML = '<i class="fas fa-copy" style="margin-right:8px;color:#1e6dff;"></i>Copy Bill';
+    nameSection.style.display = 'none';
+    copySection.style.display = '';
+    document.getElementById('popup-name-copy').value = '';
+  }
+  document.getElementById('popup-name').value = '';
+  overlay.classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('popup-overlay').classList.remove('open');
+  document.getElementById('popup-name').value = '';
+}
+
+function closePopupOutside(e) {
+  if (e.target === document.getElementById('popup-overlay')) closePopup();
+}
+
+function confirmPopup() {
+  // Only called for WhatsApp now
+  let name = document.getElementById('popup-name').value.trim();
+  if (!name) {
+    customerCounter++;
+    localStorage.setItem('dmrx_counter', customerCounter);
+    name = 'Customer #' + customerCounter;
+  }
+  const bill = buildBill(name);
+  saveToHistory(name, bill);
+  window.location.href = 'whatsapp://send?text=' + encodeURIComponent(bill);
+  setTimeout(function(){ window.open('https://wa.me/?text=' + encodeURIComponent(bill), '_blank'); }, 600);
+  showToast('Opening WhatsApp ✓');
+  closePopup();
+}
+
+function copyToClipboard(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;background:transparent;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  if (navigator.userAgent.match(/ipad|ipod|iphone/i)) {
+    const range = document.createRange();
+    range.selectNodeContents(ta);
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    ta.setSelectionRange(0, 999999);
+  }
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+  if (!ok && navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=>showToast('Bill copied! ✓')).catch(()=>showToast('Copy failed'));
+    return;
+  }
+  if (ok) showToast('Bill copied! ✓'); else showToast('Copy failed');
+}
+
+function getCopyName() {
+  let name = document.getElementById('popup-name-copy').value.trim();
+  if (!name) {
+    customerCounter++;
+    localStorage.setItem('dmrx_counter', customerCounter);
+    name = 'Customer #' + customerCounter;
+  }
+  return name;
+}
+
+function doSaveOnly() {
+  const name = getCopyName();
+  const bill = buildBillPlain(name);
+  saveToHistory(name, bill);
+  showToast('Saved: ' + name + ' ✓');
+  closePopup();
+}
+
+function doCopyAndSave() {
+  const name = getCopyName();
+  const bill = buildBillPlain(name);
+  copyToClipboard(bill);
+  saveToHistory(name, bill);
+  closePopup();
+}
+
+function doCopyOnly() { /* legacy - unused */ }
+function doCopySave() { /* legacy - unused */ }
+function confirmSaveOnly() { /* legacy - unused */ }
+
+// ─── BILL BUILDER ─────────────────────────────────────────────────
+function buildBill(name) {
+  // WhatsApp version with bold asterisks
+  if (!calcResult) return '';
+  const r = calcResult;
+  const now = new Date();
+  const d = now.getDate(), mo = now.getMonth()+1, y = now.getFullYear();
+  const line = '━━━━━━━━━━━━━━━━━━';
+  function fmt(v) { const w=Math.floor(v),kg=Math.round((v-w)*MAAN_TO_KG*100)/100; return w+' Maan '+kg+' KG'; }
+  return [
+    '🌽 *DMRX MAKKAI REPORT*', line,
+    '👤 *Customer:* '+name,
+    '📅 *Date:* '+d+'/'+(mo)+'/'+y,
+    '🕒 *Time:* '+now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    line,
+    '🌾 *Total:* '+fmt(r.totalMaan),
+    '👷 *Worker:* '+fmt(r.workerCut),
+    '🌾 *Baluri:* '+fmt(r.baluriCut),
+    '🚜 *Tractor:* '+fmt(r.tractorCut),
+    line,
+    '🏆 *FINAL:* *'+r.wholeMaan+' Maan '+r.remainKg+' KG*',
+    '⚖️ *'+fmtNum(r.finalQuintal)+' Quintal*',
+  ].join('\n');
+}
+
+function buildBillPlain(name) {
+  // Clipboard version — emojis hain, asterisks nahi
+  if (!calcResult) return '';
+  const r = calcResult;
+  const now = new Date();
+  const d = now.getDate(), mo = now.getMonth()+1, y = now.getFullYear();
+  const line = '━━━━━━━━━━━━━━━━━━';
+  function fmt(v) { const w=Math.floor(v),kg=Math.round((v-w)*MAAN_TO_KG*100)/100; return w+' Maan '+kg+' KG'; }
+  return [
+    '🌽 DMRX MAKKAI REPORT', line,
+    '👤 Customer: '+name,
+    '📅 Date: '+d+'/'+(mo)+'/'+y,
+    '🕒 Time: '+now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    line,
+    '🌾 Total:   '+fmt(r.totalMaan),
+    '👷 Worker:  '+fmt(r.workerCut),
+    '🌾 Baluri:  '+fmt(r.baluriCut),
+    '🚜 Tractor: '+fmt(r.tractorCut),
+    line,
+    '🏆 FINAL: '+r.wholeMaan+' Maan '+r.remainKg+' KG',
+    '⚖️ Quintal: '+fmtNum(r.finalQuintal),
+  ].join('\n');
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────
+function saveToHistory(name, bill) {
+  if (!calcResult) return;
+  const r = calcResult;
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  const now = new Date();
+  history.unshift({
+    name,
+    date: now.toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}),
+    time: now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    totalMaan: r.totalMaan,
+    finalMaan: r.finalMaan,
+    finalQuintal: r.finalQuintal,
+    wholeMaan: r.wholeMaan,
+    remainKg: r.remainKg,
+    workerCut: r.workerCut,
+    afterWorker: r.afterWorker,
+    baluriCut: r.baluriCut,
+    afterBaluri: r.afterBaluri,
+    tractorCut: r.tractorCut,
+    workerInput: r.workerInput,
+    baluriInput: r.baluriInput,
+    tractorInput: r.tractorInput,
+    bill,
+  });
+  localStorage.setItem('dmrx_history', JSON.stringify(history));
+  renderHistory();
+}
+
+let historyOpen = false;
+function toggleHistorySection() {
+  historyOpen = !historyOpen;
+  const body = document.getElementById('history-body');
+  const chevron = document.getElementById('history-chevron-main');
+  const delBtn = document.getElementById('delete-all-btn');
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  body.style.display = historyOpen ? '' : 'none';
+  chevron.style.transform = historyOpen ? 'rotate(180deg)' : '';
+  if (delBtn) delBtn.style.display = historyOpen && history.length > 0 ? '' : 'none';
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  const container = document.getElementById('history-list');
+  document.getElementById('history-count').textContent = history.length;
+  const delBtn = document.getElementById('delete-all-btn');
+  if (delBtn) delBtn.style.display = historyOpen && history.length > 0 ? '' : 'none';
+
+  if (history.length === 0) {
+    container.innerHTML = `<div class="empty-history">
+      <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:10px;display:block;opacity:0.3;"></i>
+      No calculations saved yet
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = history.map((item, i) => `
+    <div class="history-item" onclick="loadHistoryItem(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div class="history-name">${escHtml(item.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge">#${history.length - i}</span>
+          <i class="fas fa-upload" style="color:rgba(245,197,24,0.5);font-size:0.75rem;"></i>
+        </div>
+      </div>
+      <div class="history-meta">
+        <i class="fas fa-calendar-days" style="margin-right:4px;"></i>${item.date}
+        &nbsp;•&nbsp;
+        <i class="fas fa-clock" style="margin-right:4px;"></i>${item.time}
+      </div>
+      <div class="history-stats">
+        <div class="history-stat">
+          <div class="history-stat-label">Total</div>
+          <div class="history-stat-value">${formatMaanFull(item.totalMaan)}</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-label">Final</div>
+          <div class="history-stat-value">${item.remainKg > 0 ? item.wholeMaan + 'M ' + item.remainKg + 'KG' : item.wholeMaan + ' Maan'}</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-label">Quintal</div>
+          <div class="history-stat-value">${fmtNum(item.finalQuintal)}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;border-top:1px solid rgba(245,197,24,0.1);padding-top:10px;">
+        <button onclick="event.stopPropagation();deleteHistoryItem(${i})" class="history-del-btn">
+          <i class="fas fa-trash-can"></i> Delete
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  if (!localStorage.getItem('dmrx_history') || JSON.parse(localStorage.getItem('dmrx_history') || '[]').length === 0) {
+    showToast('History is already empty'); return;
+  }
+  localStorage.removeItem('dmrx_history');
+  customerCounter = 0;
+  localStorage.setItem('dmrx_counter', '0');
+  renderHistory();
+  showToast('History cleared ✓');
+}
+
+let selectMode = false;
+let selectedIndices = new Set();
+
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  selectedIndices.clear();
+  const btn = document.getElementById('select-mode-btn');
+  const bar = document.getElementById('select-action-bar');
+  if (selectMode) {
+    btn.innerHTML = '<i class="fas fa-xmark"></i> Done';
+    btn.style.background = 'rgba(255,80,80,0.1)';
+    btn.style.borderColor = 'rgba(255,80,80,0.3)';
+    btn.style.color = '#ff6b6b';
+    bar.style.display = 'block';
+  } else {
+    btn.innerHTML = '<i class="fas fa-check-square"></i> Select';
+    btn.style.background = 'rgba(245,197,24,0.08)';
+    btn.style.borderColor = 'rgba(245,197,24,0.25)';
+    btn.style.color = 'var(--gold)';
+    bar.style.display = 'none';
+  }
+  renderHistory();
+}
+
+function toggleSelectItem(el, index) {
+  if (selectedIndices.has(index)) {
+    selectedIndices.delete(index);
+    el.classList.remove('selected');
+    el.style.borderColor = '';
+    el.style.background = '';
+  } else {
+    selectedIndices.add(index);
+    el.classList.add('selected');
+    el.style.borderColor = 'rgba(245,197,24,0.6)';
+    el.style.background = 'rgba(245,197,24,0.1)';
+  }
+  // update checkbox icon
+  const chk = document.getElementById('chk-' + index);
+  if (chk) {
+    chk.innerHTML = selectedIndices.has(index)
+      ? '<i class="fas fa-circle-check" style="font-size:1rem;color:var(--gold);"></i>'
+      : '<i class="fas fa-circle" style="font-size:1rem;color:rgba(255,255,255,0.2);"></i>';
+  }
+}
+
+function selectAllHistory() {
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  if (selectedIndices.size === history.length) {
+    selectedIndices.clear();
+  } else {
+    history.forEach((_, i) => selectedIndices.add(i));
+  }
+  renderHistory();
+}
+
+function deleteSelected() {
+  if (selectedIndices.size === 0) { showToast('Koi select nahi hai'); return; }
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  const newHistory = history.filter((_, i) => !selectedIndices.has(i));
+  localStorage.setItem('dmrx_history', JSON.stringify(newHistory));
+  const count = selectedIndices.size;
+  selectedIndices.clear();
+  selectMode = false;
+  const btn = document.getElementById('select-mode-btn');
+  const bar = document.getElementById('select-action-bar');
+  if (btn) { btn.innerHTML = '<i class="fas fa-check-square"></i> Select'; btn.style.background='rgba(245,197,24,0.08)'; btn.style.borderColor='rgba(245,197,24,0.25)'; btn.style.color='var(--gold)'; }
+  if (bar) bar.style.display = 'none';
+  renderHistory();
+  showToast(count + ' entries deleted ✓');
+}
+
+function deleteHistoryItem(index) {
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  history.splice(index, 1);
+  localStorage.setItem('dmrx_history', JSON.stringify(history));
+  if (history.length === 0) {
+    customerCounter = 0;
+    localStorage.setItem('dmrx_counter', '0');
+  }
+  renderHistory();
+  showToast('Entry deleted ✓');
+}
+
+function toggleHistory(el) {
+  el.classList.toggle('expanded');
+}
+
+function loadHistoryItem(index) {
+  const history = JSON.parse(localStorage.getItem('dmrx_history') || '[]');
+  const item = history[index];
+  if (!item) return;
+  // Fill inputs
+  document.getElementById('inp_maan').value = fmtNum(item.totalMaan);
+  document.getElementById('inp_kg').value = fmtNum(item.totalMaan * MAAN_TO_KG);
+  document.getElementById('inp_quintal').value = fmtNum(item.totalMaan * MAAN_TO_KG / 100);
+  document.getElementById('inp_worker').value = item.workerInput > 0 ? item.workerInput : '';
+  document.getElementById('inp_baluri').value = item.baluriInput > 0 ? item.baluriInput : '';
+  document.getElementById('inp_tractor').value = item.tractorInput > 0 ? item.tractorInput : '';
+  lastChanged = 'maan';
+  calculate();
+  // Scroll to top
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  showToast(item.name + ' loaded ✓');
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+renderHistory();
+
+// ─── PWA SERVICE WORKER ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log('SW registered'))
+    .catch(e => console.log('SW error', e));
+}
+</script>
+</body>
+</html>
